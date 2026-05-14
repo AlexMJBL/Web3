@@ -5,13 +5,22 @@ export default function ProjectCard({ contract, account }) {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [totalFunds, setTotalFunds] = useState("0.0");
+  const [daysLeft, setDaysLeft] = useState(0);
 
-  // Fonction pour lire les fonds récoltés
-  const fetchTotalFunds = async () => {
+  // Fonction pour lire les données du contrat
+  const fetchContractData = async () => {
     if (contract) {
       try {
         const total = await contract.totalFunds();
         setTotalFunds(ethers.formatEther(total));
+        
+        const deadline = await contract.deadline();
+        const currentBlock = await contract.runner.provider.getBlock("latest");
+        const currentTime = currentBlock.timestamp;
+        
+        const timeLeft = Number(deadline) - currentTime;
+        const days = Math.max(0, Math.ceil(timeLeft / (24 * 60 * 60)));
+        setDaysLeft(days);
       } catch (error) {
         console.error("Erreur de lecture:", error);
       }
@@ -19,7 +28,7 @@ export default function ProjectCard({ contract, account }) {
   }
 
   useEffect(() => {
-    fetchTotalFunds();
+    fetchContractData();
   }, [contract]);
 
   // Logique de contribution
@@ -35,7 +44,7 @@ export default function ProjectCard({ contract, account }) {
 
       alert("Contribution effectuée avec succès.");
       setAmount('');
-      fetchTotalFunds();
+      fetchContractData();
     } catch (error) {
       console.error(error);
       alert("Erreur lors de la contribution : " + (error.reason || "Vérifiez la console"));
@@ -44,24 +53,7 @@ export default function ProjectCard({ contract, account }) {
     }
   };
 
-  // Logique de remboursement
-  const handleRefund = async () => {
-    if (!contract) return alert("Veuillez connecter votre portefeuille.");
 
-    try {
-      setLoading(true);
-      const tx = await contract.refund();
-      await tx.wait();
-
-      alert("Remboursement effectué.");
-      fetchTotalFunds();
-    } catch (error) {
-      console.error(error);
-      alert("Erreur lors du remboursement : " + (error.reason || "Non autorisé."));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Calcul du pourcentage (objectif fixe à 10 pour l'exemple)
   const percentage = Math.min((Number(totalFunds) / 10) * 100, 100).toFixed(1);
@@ -90,7 +82,14 @@ export default function ProjectCard({ contract, account }) {
           <div className="h-3 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5">
             <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all duration-1000" style={{ width: `${percentage}%` }}></div>
           </div>
-          <p className="text-sm text-slate-400 mt-3 text-right">Se termine dans 7 jours</p>
+          <div className="mt-6 flex items-center justify-center bg-slate-900/50 rounded-xl p-4 border border-indigo-500/20">
+            <div className="text-center">
+              <span className="block text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+                {daysLeft}
+              </span>
+              <span className="text-sm text-slate-400 font-medium uppercase tracking-wider">Jours Restants</span>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -112,16 +111,7 @@ export default function ProjectCard({ contract, account }) {
             </button>
           </div>
 
-          <div className="pt-4 border-t border-white/10">
-            <button
-              onClick={handleRefund}
-              disabled={loading}
-              className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 disabled:bg-slate-800 text-slate-300 font-medium transition-all border border-white/5"
-            >
-              Demander un remboursement
-            </button>
           </div>
-        </div>
       </div>
     </div>
   );

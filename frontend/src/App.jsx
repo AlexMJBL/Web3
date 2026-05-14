@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import Navbar from './components/Navbar';
 import HeroInfo from './components/HeroInfo';
 import ProjectCard from './components/ProjectCard';
+import ControlMenu from './components/ControlMenu';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from './utils/constants';
 
 function App() {
@@ -44,6 +45,9 @@ function App() {
           <ProjectCard contract={contract} account={account} />
         </div>
       </main>
+      
+      {/* Menu de Contrôle Simulatif */}
+      <ControlMenu contract={contract} />
     </div>
   )
 }
